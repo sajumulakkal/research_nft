@@ -23,18 +23,18 @@ describe("ResearchNFT Contract", function () {
 
 
   /** 1. DEPLOYMENT & MINTING **/
-  it("Should deploy with correct name and symbol", async function () {
+  it("01. Should deploy with correct name and symbol", async function () {
     expect(await researchNFT.name()).to.equal("ResearchNFT");
     expect(await researchNFT.symbol()).to.equal("RNFT");
   });
 
-  it("Should mint an NFT", async function () {
+  it("02. Should mint an NFT", async function () {
     await researchNFT.createResearchNFT("ipfs://metadata1", "ipfs://doc1", 500, 100000, 1);
     expect(await researchNFT.tokenURI(0)).to.equal("ipfs://metadata1");
   });
 
   /** 2. METADATA & DOCUMENT UPDATES **/
-  it("Should update metadata and document URI", async function () {
+  it("03. Should update metadata and document URI", async function () {
     await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
     await researchNFT.updateMetadataURI(0, "ipfs://meta2");
     await researchNFT.updateDocumentURI(0, "ipfs://doc2");
@@ -42,7 +42,7 @@ describe("ResearchNFT Contract", function () {
   });
 
   /** 3. AUCTION & BIDDING **/
-  it("Should start an auction, allow bidding, and end auction", async function () {
+  it("04. Should start an auction, allow bidding, and end auction", async function () {
     await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
     await researchNFT.startAuction(0, ethers.parseEther("1"), 3600);
 
@@ -64,7 +64,7 @@ describe("ResearchNFT Contract", function () {
   });
 
   /** 4. VIEW COUNT TRACKING **/
-  it("Should increment view count", async function () {
+  it("05. Should increment view count", async function () {
     await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
     await researchNFT.incrementViewCount(0);
     const data = await researchNFT.researchData(0);
@@ -72,7 +72,7 @@ describe("ResearchNFT Contract", function () {
   });
 
   /** 5. ACCESS CONTROL **/
-  it("Should pause and unpause the contract", async function () {
+  it("06. Should pause and unpause the contract", async function () {
     await researchNFT.pause();
     await expect(
       researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1)
@@ -85,7 +85,7 @@ describe("ResearchNFT Contract", function () {
   });
 
 /** 6. ROYALTIES & PAYOUTS **/
-it("Should allow NFT purchase", async function () {
+it("07. Should allow NFT purchase", async function () {
   await researchNFT.connect(owner).createResearchNFT("ipfs://meta2", "ipfs://doc2", 500, 100000, 1);
   await researchNFT.connect(owner).setForSale(0, ethers.parseEther("1"));
 
@@ -114,21 +114,21 @@ it("Should allow NFT purchase", async function () {
 
 
   /** 7. NFT EXPIRATION **/
-  it("Should check NFT expiration status", async function () {
+  it("08. Should check NFT expiration status", async function () {
     const now = Math.floor(Date.now() / 1000);
     await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, now - 1, 1);
     expect(await researchNFT.isExpired(0)).to.equal(true);
   });
 
   /** 8. OWNERSHIP TRANSFER **/
-  it("Should transfer ownership of NFT", async function () {
+  it("09. Should transfer ownership of NFT", async function () {
     await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
     await researchNFT.transferFrom(owner.address, addr1.address, 0);
     expect(await researchNFT.ownerOf(0)).to.equal(addr1.address);
   });
 
   /** 9. PERMISSIONS & RESTRICTED ACCESS **/
-  it("Should restrict non-owners from updating metadata", async function () {
+  it("10. Should restrict non-owners from updating metadata", async function () {
     await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
     await expect(
       researchNFT.connect(addr1).updateMetadataURI(0, "ipfs://meta2")
@@ -136,14 +136,14 @@ it("Should allow NFT purchase", async function () {
   });
 
   /** 10. BURNING NFT **/
-  it("Should burn an NFT", async function () {
+  it("11. Should burn an NFT", async function () {
     await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
     await researchNFT.burn(0);
     await expect(researchNFT.tokenURI(0)).to.be.revertedWith("ERC721: invalid token ID");
   });
 
 /** 11. SETTING ROYALTIES **/
-it("Should set royalties correctly", async function () {
+it("12. Should set royalties correctly", async function () {
     // Create NFT with some metadata and set royalty details
     await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
 
@@ -162,7 +162,7 @@ it("Should set royalties correctly", async function () {
 
 
   /** 12. AUCTION EXTENSION **/
-  it("Should extend auction on new bid", async function () {
+  it("13. Should extend auction on new bid", async function () {
     await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
     await researchNFT.startAuction(0, ethers.parseEther("1"), 3600);
     await researchNFT.connect(addr1).placeBid(0, { value: ethers.parseEther("1.5") });
@@ -173,7 +173,7 @@ it("Should set royalties correctly", async function () {
   });
 
 /** 13. DIRECT SALE **/
-it("Should allow NFT purchase", async function () {
+it("14. Should allow NFT purchase", async function () {
     await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
     await researchNFT.setForSale(0, ethers.parseEther("1"));
 
@@ -192,7 +192,7 @@ it("Should allow NFT purchase", async function () {
 });
 
 /** 14. CHECKING NFT SALE STATUS **/
-it("Should allow checking if NFT is for sale", async function () {
+it("15. Should allow checking if NFT is for sale", async function () {
   await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
   await researchNFT.setForSale(0, ethers.parseEther("2"));
   const forSale = await researchNFT.isForSale(0);
@@ -200,7 +200,7 @@ it("Should allow checking if NFT is for sale", async function () {
 });
 
 /** 15A. RESTRICTED AUCTION FUNCTIONALITY **/
-it("Should not allow non-owners to start auction", async function () {
+it("16. Should not allow non-owners to start auction", async function () {
   await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
 
   await expect(
@@ -211,7 +211,7 @@ it("Should not allow non-owners to start auction", async function () {
 
 /** 15B. RESTRICTED AUCTION FUNCTIONALITY **/
 
-it("Should allow the NFT owner (not contract owner) to start auction", async function () {
+it("17. Should allow the NFT owner (not contract owner) to start auction", async function () {
   // Let addr1 create and own an NFT
   await researchNFT.connect(addr1).createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
 
@@ -227,7 +227,7 @@ it("Should allow the NFT owner (not contract owner) to start auction", async fun
 });
 
 /** 16. RESTRICTED PURCHASE FUNCTIONALITY **/
-it("Should not allow purchase if not for sale", async function () {
+it("18. Should not allow purchase if not for sale", async function () {
   await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
   await expect(
     researchNFT.connect(addr1).buyNFT(0, { value: ethers.parseEther("1") })
@@ -236,7 +236,7 @@ it("Should not allow purchase if not for sale", async function () {
 
 
 /** 17. RESTRICTED BIDDING FUNCTIONALITY **/
-it("Should not allow bidding on non-auction NFTs", async function () {
+it("19. Should not allow bidding on non-auction NFTs", async function () {
   await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
   await expect(
     researchNFT.connect(addr1).placeBid(0, { value: ethers.parseEther("1.5") })
@@ -245,7 +245,7 @@ it("Should not allow bidding on non-auction NFTs", async function () {
 
 
 /** 18. VERIFYING THE NFT AUCTION FINALIZATION **/
-it("Should finalize auction correctly when ending", async function () {
+it("20. Should finalize auction correctly when ending", async function () {
   await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
   await researchNFT.startAuction(0, ethers.parseEther("1"), 3600);
 
@@ -272,7 +272,7 @@ it("Should finalize auction correctly when ending", async function () {
 });
 
 /** 19.Check Auction Time Extension on New Bid **/
-it("Should extend auction duration with a new bid", async function () {
+it("21. Should extend auction duration with a new bid", async function () {
   await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
   await researchNFT.startAuction(0, ethers.parseEther("1"), 3600);
 
@@ -293,7 +293,7 @@ it("Should extend auction duration with a new bid", async function () {
 });
 
 /** 20. Check if NFT is Not Re-Saleable after Auction End **/
-it("Should not allow re-sale of NFT after auction", async function () {
+it("22. Should not allow re-sale of NFT after auction", async function () {
   // Step 1: Mint a new NFT
   await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
 
@@ -326,7 +326,7 @@ it("Should not allow re-sale of NFT after auction", async function () {
 
 
 /** 21.  Test for Non-Owner Changing Royalties **/
-it("Should restrict non-owners from setting royalties", async function () {
+it("23. Should restrict non-owners from setting royalties", async function () {
   await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
 
   // Non-owner tries to set royalties (should fail)
@@ -342,7 +342,7 @@ it("Should restrict non-owners from setting royalties", async function () {
 
 
 /** 22. Test for NFT Transfer during Auction **/
-it("Should not allow NFT transfer during auction", async function () {
+it("24. Should not allow NFT transfer during auction", async function () {
   await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
   await researchNFT.startAuction(0, ethers.parseEther("1"), 3600);
 
@@ -360,7 +360,7 @@ it("Should not allow NFT transfer during auction", async function () {
   expect(await researchNFT.ownerOf(0)).to.equal(addr1.address);
 });
 /** 23. Test for Multiple Auctions of the Same NFT **/
-it("Should not allow multiple auctions for the same NFT", async function () {
+it("25. Should not allow multiple auctions for the same NFT", async function () {
   await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
 
   // Start the first auction
@@ -374,7 +374,7 @@ it("Should not allow multiple auctions for the same NFT", async function () {
 
 
 /** 24. Test for Correct Royalties during Sale **/
-it("Should pay royalties during NFT sale", async function () {
+it("26. Should pay royalties during NFT sale", async function () {
   const [owner, addr1, royaltyRecipient] = await ethers.getSigners();
 
   // Deploy contract
@@ -421,7 +421,7 @@ it("Should pay royalties during NFT sale", async function () {
 });
 
 /** 25. Test for Access Control on pause and unpause **/
-it("Should restrict pausing/unpausing to the owner", async function () {
+it("27. Should restrict pausing/unpausing to the owner", async function () {
   await expect(
     researchNFT.connect(addr1).pause()
   ).to.be.revertedWith("Ownable: caller is not the owner");
@@ -441,7 +441,7 @@ it("Should restrict pausing/unpausing to the owner", async function () {
 });
 
 /** 26. Test for Access Control on pause and unpause **/
-it("Should not allow actions when the contract is paused", async function () {
+it("28. Should not allow actions when the contract is paused", async function () {
   // Mint a token first (ID 0 will be created here)
   await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
 
@@ -489,7 +489,7 @@ it("Should not allow actions when the contract is paused", async function () {
    * 27. Multi-Signature Approvals:
    * Test adding research owners and require majority approval for executing an action.
    */
-it("Should add new research owners and emit the event", async function () {
+it("29. Should add new research owners and emit the event", async function () {
     const [owner, addr1] = await ethers.getSigners();
 
     const ResearchNFT = await ethers.getContractFactory("ResearchNFT");
@@ -524,7 +524,7 @@ it("Should add new research owners and emit the event", async function () {
 // Assuming you are using Ethers v6
 // Fix the test: Should bundle multiple NFTs into one bundle NFT
 
-it("Should bundle multiple NFTs into one bundle NFT", async function () {
+it("30. Should bundle multiple NFTs into one bundle NFT", async function () {
     const [owner] = await ethers.getSigners();
 
     // Deploy the contract and connect to owner
@@ -551,7 +551,7 @@ it("Should bundle multiple NFTs into one bundle NFT", async function () {
    * 29. Revoking Access:
    * Test that calling revokeAccess burns an NFT.
    */
-  it("Should revoke access by burning an NFT", async function () {
+  it("31. Should revoke access by burning an NFT", async function () {
     await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 200000, 1);
     await researchNFT.revokeAccess(0);
     await expect(researchNFT.tokenURI(0)).to.be.revertedWith("ERC721: invalid token ID");
@@ -561,7 +561,7 @@ it("Should bundle multiple NFTs into one bundle NFT", async function () {
    * 30. Authenticity Verification:
    * Test that calling verifyAuthenticity emits the ContentVerified event.
    */
-  it("Should emit ContentVerified event when verifying authenticity", async function () {
+  it("32. Should emit ContentVerified event when verifying authenticity", async function () {
     await expect(researchNFT.verifyAuthenticity(0, true))
       .to.emit(researchNFT, "ContentVerified")
       .withArgs(0, true);
@@ -571,7 +571,7 @@ it("Should bundle multiple NFTs into one bundle NFT", async function () {
    * 31. Translation Functionality:
    * Test that translations can be set and retrieved.
    */
-  it("Should set and retrieve NFT translation", async function () {
+  it("33. Should set and retrieve NFT translation", async function () {
     await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 200000, 1);
     await researchNFT.setTranslation(0, "fr", "Contenu traduit");
     const translation = await researchNFT.getTranslation(0, "fr");
@@ -582,7 +582,7 @@ it("Should bundle multiple NFTs into one bundle NFT", async function () {
    * 32. Subscription Management:
    * Test upgrading and downgrading a subscription by adjusting access level.
    */
-  it("Should upgrade and downgrade subscription access level", async function () {
+  it("34. Should upgrade and downgrade subscription access level", async function () {
     // Mint an NFT.
     await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 200000, 1);
 
@@ -601,28 +601,20 @@ it("Should bundle multiple NFTs into one bundle NFT", async function () {
    * 33. Sharing Access:
    * Test that sharing access mints a new NFT and emits an AccessShared event.
    */
-  it("Should share access via minting a new NFT", async function () {
+  it("35. Should share access via minting a new NFT", async function () {
     await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 200000, 1);
     await expect(researchNFT.shareAccess(0, addr1.address))
       .to.emit(researchNFT, "AccessShared")
       .withArgs(0, addr1.address);
   });
 
-  /** 
-   * 34. Engagement Tracking:
-   * Test that trackEngagement emits the UserEngaged event.
-   */
-  it("Should emit UserEngaged event on engagement tracking", async function () {
-    await expect(researchNFT.trackEngagement(addr1.address, 0, "view"))
-      .to.emit(researchNFT, "UserEngaged")
-      .withArgs(addr1.address, 0, "view");
-  });
+
 
   /** 
    * 35. Content Preview:
    * Test that a preview URL can be set and retrieved.
    */
-  it("Should set and retrieve content preview URL", async function () {
+  it("36. Should set and retrieve content preview URL", async function () {
     await researchNFT.setPreview(0, "ipfs://preview1");
     const preview = await researchNFT.getPreview(0);
     expect(preview).to.equal("ipfs://preview1");
@@ -632,7 +624,7 @@ it("Should bundle multiple NFTs into one bundle NFT", async function () {
    * 36. User Access Level:
    * Test setting and retrieving a user's access level for a given NFT.
    */
-  it("Should set and get user access level", async function () {
+  it("37. Should set and get user access level", async function () {
     await researchNFT.setUserAccessLevel(0, addr1.address, 3);
     const level = await researchNFT.getUserAccessLevel(0, addr1.address);
     expect(level).to.equal(3);
@@ -642,12 +634,12 @@ it("Should bundle multiple NFTs into one bundle NFT", async function () {
    * 37. Contract Ownership Transfer:
    * Test that ownership of the contract can be transferred.
    */
-  it("Should transfer contract ownership", async function () {
+  it("38. Should transfer contract ownership", async function () {
     await researchNFT.transferOwnershipOfContract(addr2.address);
     expect(await researchNFT.owner()).to.equal(addr2.address);
   });
 /* Failing Bids */
-it("Should reject bids lower than current highest", async function () {
+it("39. Should reject bids lower than current highest", async function () {
   await researchNFT.createResearchNFT("ipfs://meta", "ipfs://doc", 500, 100000, 1);
   await researchNFT.startAuction(0, ethers.parseEther("1"), 3600);
   await researchNFT.connect(addr1).placeBid(0, { value: ethers.parseEther("2") });
@@ -658,7 +650,7 @@ it("Should reject bids lower than current highest", async function () {
 });
 
 /*Unauthorized Auction End  */
-it("Should prevent non-owner from ending the auction", async function () {
+it("40. Should prevent non-owner from ending the auction", async function () {
   await researchNFT.createResearchNFT("ipfs://meta", "ipfs://doc", 500, 100000, 1);
   await researchNFT.startAuction(0, ethers.parseEther("1"), 3600);
 
@@ -674,7 +666,7 @@ it("Should prevent non-owner from ending the auction", async function () {
 
 
 /* Cannot Place Bid After Auction Ends */
-it("Should prevent bidding after auction ends", async function () {
+it("41. Should prevent bidding after auction ends", async function () {
   await researchNFT.createResearchNFT("ipfs://meta", "ipfs://doc", 500, 100000, 1);
   await researchNFT.startAuction(0, ethers.parseEther("1"), 1);
 
@@ -688,14 +680,14 @@ it("Should prevent bidding after auction ends", async function () {
   ).to.be.revertedWith("Auction not active");
 });
 /* Royalty Info for Nonexistent Token */
-it("Should revert royalty info request for non-existent token", async function () {
+it("42. Should revert royalty info request for non-existent token", async function () {
   await expect(
     researchNFT.royaltyInfo(999, ethers.parseEther("1"))
   ).to.be.revertedWith("ERC721: invalid token ID");
 });
 
 /* Purchase of NFT Not For Sale */
-it("Should prevent buying an NFT not set for sale", async function () {
+it("43. Should prevent buying an NFT not set for sale", async function () {
   await researchNFT.createResearchNFT("ipfs://meta", "ipfs://doc", 500, 100000, 1);
   await expect(
     researchNFT.connect(addr1).buyNFT(0, { value: ethers.parseEther("1") })
@@ -703,14 +695,14 @@ it("Should prevent buying an NFT not set for sale", async function () {
 });
 
 /*. Document URI Retrieval */
- it("Should retrieve the correct document URI", async function () {
+ it("44. Should retrieve the correct document URI", async function () {
   await researchNFT.createResearchNFT("ipfs://meta", "ipfs://doc", 500, 100000, 1);
   const data = await researchNFT.researchData(0);
   expect(data.documentURI).to.equal("ipfs://doc");
 });
 
 
-  it("Should increment readership count and emit event when research is viewed", async function () {
+  it("45. Should increment readership count and emit event when research is viewed", async function () {
     // Mint an NFT
     await researchNFT.createResearchNFT("ipfs://meta", "ipfs://doc", 500, 100000, 1);
     
@@ -727,7 +719,7 @@ it("Should prevent buying an NFT not set for sale", async function () {
       .withArgs(0, addr1.address, 1);
   });
 
-  it("Should correctly increment multiple views", async function () {
+  it("46. Should correctly increment multiple views", async function () {
     await researchNFT.createResearchNFT("ipfs://meta", "ipfs://doc", 500, 100000, 1);
     
     await researchNFT.connect(addr1).viewResearch(0);
@@ -738,18 +730,18 @@ it("Should prevent buying an NFT not set for sale", async function () {
     expect(count).to.equal(3);
   });
 
-  it("Should revert when viewing nonexistent research", async function () {
+  it("47. Should revert when viewing nonexistent research", async function () {
     await expect(researchNFT.viewResearch(999))
       .to.be.revertedWith("ResearchNFT: View query for nonexistent token");
   });
 
-  it("Should revert when getting readership count for nonexistent research", async function () {
+  it("48. Should revert when getting readership count for nonexistent research", async function () {
     await expect(researchNFT.getReadershipCount(999))
       .to.be.revertedWith("ResearchNFT: Count query for nonexistent token");
   });
 
 
-it("should allow a user to add feedback", async function () {
+it("49. should allow a user to add feedback", async function () {
   const tokenId = 1;
   const rating = 5;
   const comment = "Excellent research paper.";
@@ -766,7 +758,7 @@ it("should allow a user to add feedback", async function () {
   expect(feedbacks[0].comment).to.equal(comment);
 });
 
-it("should retrieve all feedback for a token", async function () {
+it("50. should retrieve all feedback for a token", async function () {
   const tokenId = 1;
 
   await researchNFT.connect(addr1).addFeedback(tokenId, addr1.address, 4, "Good work.");
@@ -778,7 +770,7 @@ it("should retrieve all feedback for a token", async function () {
   expect(feedbacks[1].user).to.equal(addr2.address);
 });
 
-it("should calculate the average rating correctly", async function () {
+it("51. should calculate the average rating correctly", async function () {
   const tokenId = 1;
 
   await researchNFT.connect(addr1).addFeedback(tokenId, addr1.address, 3, "Average.");
@@ -787,7 +779,7 @@ it("should calculate the average rating correctly", async function () {
   const averageRating = await researchNFT.getAverageRating(tokenId);
   expect(averageRating).to.equal(4); // (3 + 5) / 2
 });
-it("Should allow users to add comments", async function () {
+it("52. Should allow users to add comments", async function () {
     // Whitelist addr1 as a merchant before minting
     await researchNFT.connect(owner).addMerchant(addr1.address);
 
@@ -828,7 +820,7 @@ it("Should allow users to add comments", async function () {
 });
 
 
-it("Should emit CommentAdded event upon adding a comment", async function () {
+it("53. Should emit CommentAdded event upon adding a comment", async function () {
   // 1) Mint the NFT so tokenId 0 exists
   await researchNFT.connect(owner).createResearchNFT(
     "ipfs://meta",
@@ -846,7 +838,7 @@ it("Should emit CommentAdded event upon adding a comment", async function () {
     .withArgs(0, addr1.address, "Insightful work!", anyValue); // anyValue skips exact timestamp :contentReference[oaicite:1]{index=1}
 });
 
-it("1. Vote to promote quality research", async function () {
+it("54. Vote to promote quality research", async function () {
     const [merchant, vendor, employee] = await ethers.getSigners();
 
     // Whitelist the merchant
@@ -873,13 +865,13 @@ it("1. Vote to promote quality research", async function () {
     expect(feedback[0].comment).to.equal(comment);
 });
 
-it("2. Award tokens for research engagement", async function () {
+it("55. Award tokens for research engagement", async function () {
     await researchNFT.rewardEngagement(addr1.address, 10);
 
     const balance = await researchNFT.tokenBalance(addr1.address);
     expect(balance).to.equal(10);
 });
-it("3. List NFTs for sale", async function () {
+it("56. List NFTs for sale", async function () {
     // Whitelist merchant
     await researchNFT.connect(owner).addMerchant(owner.address);
 
@@ -900,7 +892,7 @@ it("3. List NFTs for sale", async function () {
 });
 
 
-it("4. Delist NFTs from sale", async function () {
+it("57. Delist NFTs from sale", async function () {
     // Whitelist merchant
     await researchNFT.connect(owner).addMerchant(owner.address);
 
@@ -927,7 +919,7 @@ it("4. Delist NFTs from sale", async function () {
     expect(isDelisted).to.be.false;
 });
 
-it("5. Update sale price of NFT", async function () {
+it("58. Update sale price of NFT", async function () {
     // Whitelist merchant
     await researchNFT.connect(owner).addMerchant(owner.address);
 
@@ -957,7 +949,7 @@ it("5. Update sale price of NFT", async function () {
 
 
 
-it("6. View NFTs on sale", async function () {
+it("59. View NFTs on sale", async function () {
   // Ensure the merchant is added to the whitelist
   await researchNFT.addMerchant(merchant.address);
   
@@ -1012,7 +1004,7 @@ it("6. View NFTs on sale", async function () {
 });
 
 
-it("7. Retrieve all active research NFTs", async function () {
+it("60. Retrieve all active research NFTs", async function () {
     const metadataURI = "https://example.com/metadata1.json";
 
     // Step 1: Owner whitelists the merchant
@@ -1041,118 +1033,25 @@ it("7. Retrieve all active research NFTs", async function () {
 
 
 
-it("8. Ban a user from interacting with NFTs", async function () {
+it("61. Ban a user from interacting with NFTs", async function () {
     await researchNFT.connect(owner).banUser(addr1.address); // ensure owner calls
     const banned = await researchNFT.isBanned(addr1.address);
     expect(banned).to.be.true;
 });
 
 
-it("11. Allow gifting of NFTs to another user", async function () {
-    // 1. Whitelist the merchant
-    await researchNFT.connect(owner).addMerchant(merchant.address);
-
-    // 2. Mint a Reward NFT to addr1
-    const metadataURI = "ipfs://test-metadata";
-    await researchNFT.connect(merchant).mintRewardNFT(addr1.address, addr1.address, metadataURI);
-
-    // 3. Gift the NFT from addr1 to addr2
-    await researchNFT.connect(addr1).giftNFT(0, addr2.address); // tokenId is 0 for first mint
-
-    // 4. Verify the new owner is addr2
-    const newOwner = await researchNFT.ownerOf(0);
-    expect(newOwner).to.equal(addr2.address);
-});
-
-it("17. Enable NFT lending or renting", async function () {
-    // Step 1: Add the owner as a merchant (allow minting)
-    await researchNFT.addMerchant(owner.address);
-
-    // Step 2: Mint a reward NFT to addr1 (tokenId 0 should be minted first)
-    await researchNFT.mintRewardNFT(owner.address, addr1.address, "ipfs://someURI");
-
-    // Step 3: Ensure addr1 owns the token with tokenId 0
-    const ownerOfToken = await researchNFT.ownerOf(0);
-    expect(ownerOfToken).to.equal(addr1.address);
-
-    // Step 4: Lend the NFT with tokenId 0 to addr2 for 7 days
-    // Ensure this is called by addr1 (the owner of the token)
-    await researchNFT.connect(addr1).lendNFT(0, addr2.address, 7); // addr1 lends the NFT to addr2
-
-    // Step 5: Validate the borrower (addr2 should be the current renter)
-    const [borrower, returnTime] = await researchNFT.getLendingInfo(0);
-    expect(borrower).to.equal(addr2.address);
-});
-
-
-
-it("19. Enable batch transfer of NFTs", async function () {
-    // Step 1: Add the calling address (e.g., addr1) as a whitelisted merchant
-    await researchNFT.addMerchant(addr1.address); // Add addr1 as a merchant
-
-    // Step 2: Mint NFTs to the initial owner (e.g., to addr1) from the whitelisted merchant
-    await researchNFT.connect(addr1).mintRewardNFT(owner.address, addr1.address, "ipfs://metadataURI1"); // Mint NFT with tokenId 0
-    await researchNFT.connect(addr1).mintRewardNFT(owner.address, addr1.address, "ipfs://metadataURI2"); // Mint NFT with tokenId 1
-
-    // Step 3: Ensure addr1 owns the NFTs
-    let owner1 = await researchNFT.ownerOf(0); // Get owner of tokenId 0
-    let owner2 = await researchNFT.ownerOf(1); // Get owner of tokenId 1
-    expect(owner1).to.equal(addr1.address); // Check that addr1 is the owner of tokenId 0
-    expect(owner2).to.equal(addr1.address); // Check that addr1 is the owner of tokenId 1
-
-    // Step 4: Perform batch transfer from addr1 to addr2
-    await researchNFT.connect(addr1).batchTransferNFTs(addr2.address, [0, 1]); // Transfer both tokens to addr2
-
-    // Step 5: Ensure the ownership has been transferred to addr2
-    owner1 = await researchNFT.ownerOf(0); // Get new owner of tokenId 0
-    owner2 = await researchNFT.ownerOf(1); // Get new owner of tokenId 1
-    expect(owner1).to.equal(addr2.address); // Check that addr2 is the owner of tokenId 0
-    expect(owner2).to.equal(addr2.address); // Check that addr2 is the owner of tokenId 1
-});
-    it("13. Integrate oracle for real-time data use", async function () {
-        const data = await researchNFT.getOracleData();
-        expect(data).to.not.equal(0); // or other meaningful check
-    });
 
 
 
 
 
-it("10. Provide update logs/history for NFTs", async function () {
-    const tokenId = 1; // Specify a valid tokenId or mint one
 
-    // Add a log for the token
-    await researchNFT.addLog(tokenId, "Log entry 1");
 
-    // Fetch the update logs (history) for the NFT
-    const history = await researchNFT.getUpdateLogs(tokenId);
-    
-    // Ensure there is at least one log
-    expect(history.length).to.be.above(0);  // Ensure that logs have been added
 
-    // Optionally, you can print the logs to the console for debugging
-    console.log("Log history:", history);
-});
-    it("15. Verify document authenticity via hash", async function () {
-        const document = "This is a document content";
-        const docHash = keccak256(toUtf8Bytes(document));
 
-        // Check the result using the view function
-        const verified = await researchNFT.isDocumentHashVerified(1, docHash);
-        expect(verified).to.be.true;
 
-        // Optionally trigger the event
-        const tx = await researchNFT.verifyDocumentHash(1, docHash);
-        await tx.wait(); // Wait for transaction to complete
-    });
-it("21. Export metadata and transaction history as JSON/CSV", async function () {
-    const metadata = await researchNFT.exportData(1);
 
-    // Ensure the exported data includes the "title" field
-    expect(metadata).to.include("title"); // or any expected field like 'uri'
-});
-
-it("9. Issue certificate after subscription expiration", async function () {
+it("62. Issue certificate after subscription expiration", async function () {
     // 1. Whitelist the merchant
     await researchNFT.connect(owner).addMerchant(merchant.address);
 
@@ -1190,10 +1089,40 @@ it("9. Issue certificate after subscription expiration", async function () {
     const cert = await researchNFT.certificates(tokenId);
     expect(cert.issued).to.be.true;
 });
+it("63. Provide update logs/history for NFTs", async function () {
+    const tokenId = 1; // Specify a valid tokenId or mint one
+
+    // Add a log for the token
+    await researchNFT.addLog(tokenId, "Log entry 1");
+
+    // Fetch the update logs (history) for the NFT
+    const history = await researchNFT.getUpdateLogs(tokenId);
+    
+    // Ensure there is at least one log
+    expect(history.length).to.be.above(0);  // Ensure that logs have been added
+
+    // Optionally, you can print the logs to the console for debugging
+    console.log("Log history:", history);
+});
+
+it("64. Allow gifting of NFTs to another user", async function () {
+    // 1. Whitelist the merchant
+    await researchNFT.connect(owner).addMerchant(merchant.address);
+
+    // 2. Mint a Reward NFT to addr1
+    const metadataURI = "ipfs://test-metadata";
+    await researchNFT.connect(merchant).mintRewardNFT(addr1.address, addr1.address, metadataURI);
+
+    // 3. Gift the NFT from addr1 to addr2
+    await researchNFT.connect(addr1).giftNFT(0, addr2.address); // tokenId is 0 for first mint
+
+    // 4. Verify the new owner is addr2
+    const newOwner = await researchNFT.ownerOf(0);
+    expect(newOwner).to.equal(addr2.address);
+});
 
 
-
-it("12. Allow auction-style bidding on NFTs", async function () {
+it("65. Allow auction-style bidding on NFTs", async function () {
     // 1. Whitelist the merchant
     await researchNFT.connect(owner).addMerchant(merchant.address);
 
@@ -1227,8 +1156,14 @@ it("12. Allow auction-style bidding on NFTs", async function () {
     expect(bid.bidder).to.equal(addr2.address);
 });
 
+    it("66. Integrate oracle for real-time data use", async function () {
+        const data = await researchNFT.getOracleData();
+        expect(data).to.not.equal(0); // or other meaningful check
+    });
+
+
 // Updated logic to capture the RewardMinted event
-it("14. Automatically extend subscription upon payment", async function () {
+it("67. Automatically extend subscription upon payment", async function () {
   // 1. Whitelist the merchant
   await researchNFT.connect(owner).addMerchant(merchant.address);
 
@@ -1286,7 +1221,20 @@ it("14. Automatically extend subscription upon payment", async function () {
   expect(newEndTime).to.be.gt(initialEndTime);
 });
 
-it("16. Show expiration countdown", async function () {
+    it("68. Verify document authenticity via hash", async function () {
+        const document = "This is a document content";
+        const docHash = keccak256(toUtf8Bytes(document));
+
+        // Check the result using the view function
+        const verified = await researchNFT.isDocumentHashVerified(1, docHash);
+        expect(verified).to.be.true;
+
+        // Optionally trigger the event
+        const tx = await researchNFT.verifyDocumentHash(1, docHash);
+        await tx.wait(); // Wait for transaction to complete
+    });
+
+it("69. Show expiration countdown", async function () {
   await researchNFT.connect(owner).addMerchant(merchant.address);
 
   const mintTx = await researchNFT.connect(merchant).mintRewardNFT(owner.address, addr1.address, "ipfs://metadataURI1");
@@ -1313,37 +1261,29 @@ it("16. Show expiration countdown", async function () {
 });
 
 
-it("20. Add tags or categories to NFTs", async function () {
-  await researchNFT.connect(owner).addMerchant(merchant.address);
+it("70. Enable NFT lending or renting", async function () {
+    // Step 1: Add the owner as a merchant (allow minting)
+    await researchNFT.addMerchant(owner.address);
 
-  const mintTx = await researchNFT.connect(merchant).mintRewardNFT(owner.address, addr1.address, "ipfs://metadataURI1");
-  const mintReceipt = await mintTx.wait();
+    // Step 2: Mint a reward NFT to addr1 (tokenId 0 should be minted first)
+    await researchNFT.mintRewardNFT(owner.address, addr1.address, "ipfs://someURI");
 
-  const rewardMintedEvent = mintReceipt.logs
-    .map((log) => {
-      try {
-        return researchNFT.interface.parseLog(log);
-      } catch {
-        return null;
-      }
-    })
-    .find((parsed) => parsed && parsed.name === "RewardMinted");
+    // Step 3: Ensure addr1 owns the token with tokenId 0
+    const ownerOfToken = await researchNFT.ownerOf(0);
+    expect(ownerOfToken).to.equal(addr1.address);
 
-  if (!rewardMintedEvent) {
-    throw new Error("RewardMinted event not found");
-  }
+    // Step 4: Lend the NFT with tokenId 0 to addr2 for 7 days
+    // Ensure this is called by addr1 (the owner of the token)
+    await researchNFT.connect(addr1).lendNFT(0, addr2.address, 7); // addr1 lends the NFT to addr2
 
-  const tokenId = rewardMintedEvent.args[0];
-
-  await researchNFT.connect(addr1).addTag(tokenId, "AI");
-
-  const tags = await researchNFT.getTags(tokenId);
-  expect(tags).to.include("AI");
+    // Step 5: Validate the borrower (addr2 should be the current renter)
+    const [borrower, returnTime] = await researchNFT.getLendingInfo(0);
+    expect(borrower).to.equal(addr2.address);
 });
 
 
 // Updated test code for 18. Notify user before NFT expires
-it("18. Notify user before NFT expires", async function () {
+it("71. Notify user before NFT expires", async function () {
     // Whitelist the merchant
     await researchNFT.connect(owner).addMerchant(merchant.address);
 
@@ -1381,5 +1321,70 @@ it("18. Notify user before NFT expires", async function () {
     const notified = await researchNFT.checkForExpiryNotification(tokenId);
     expect(notified).to.be.true;
 });
+it("72. Enable batch transfer of NFTs", async function () {
+    // Step 1: Add the calling address (e.g., addr1) as a whitelisted merchant
+    await researchNFT.addMerchant(addr1.address); // Add addr1 as a merchant
 
+    // Step 2: Mint NFTs to the initial owner (e.g., to addr1) from the whitelisted merchant
+    await researchNFT.connect(addr1).mintRewardNFT(owner.address, addr1.address, "ipfs://metadataURI1"); // Mint NFT with tokenId 0
+    await researchNFT.connect(addr1).mintRewardNFT(owner.address, addr1.address, "ipfs://metadataURI2"); // Mint NFT with tokenId 1
+
+    // Step 3: Ensure addr1 owns the NFTs
+    let owner1 = await researchNFT.ownerOf(0); // Get owner of tokenId 0
+    let owner2 = await researchNFT.ownerOf(1); // Get owner of tokenId 1
+    expect(owner1).to.equal(addr1.address); // Check that addr1 is the owner of tokenId 0
+    expect(owner2).to.equal(addr1.address); // Check that addr1 is the owner of tokenId 1
+
+    // Step 4: Perform batch transfer from addr1 to addr2
+    await researchNFT.connect(addr1).batchTransferNFTs(addr2.address, [0, 1]); // Transfer both tokens to addr2
+
+    // Step 5: Ensure the ownership has been transferred to addr2
+    owner1 = await researchNFT.ownerOf(0); // Get new owner of tokenId 0
+    owner2 = await researchNFT.ownerOf(1); // Get new owner of tokenId 1
+    expect(owner1).to.equal(addr2.address); // Check that addr2 is the owner of tokenId 0
+    expect(owner2).to.equal(addr2.address); // Check that addr2 is the owner of tokenId 1
+});
+it("73. Add tags or categories to NFTs", async function () {
+  await researchNFT.connect(owner).addMerchant(merchant.address);
+
+  const mintTx = await researchNFT.connect(merchant).mintRewardNFT(owner.address, addr1.address, "ipfs://metadataURI1");
+  const mintReceipt = await mintTx.wait();
+
+  const rewardMintedEvent = mintReceipt.logs
+    .map((log) => {
+      try {
+        return researchNFT.interface.parseLog(log);
+      } catch {
+        return null;
+      }
+    })
+    .find((parsed) => parsed && parsed.name === "RewardMinted");
+
+  if (!rewardMintedEvent) {
+    throw new Error("RewardMinted event not found");
+  }
+
+  const tokenId = rewardMintedEvent.args[0];
+
+  await researchNFT.connect(addr1).addTag(tokenId, "AI");
+
+  const tags = await researchNFT.getTags(tokenId);
+  expect(tags).to.include("AI");
+});
+it("74. Export metadata and transaction history as JSON/CSV", async function () {
+    const metadata = await researchNFT.exportData(1);
+
+    // Ensure the exported data includes the "title" field
+    expect(metadata).to.include("title"); // or any expected field like 'uri'
+});
+
+  /** 
+   * 34. Engagement Tracking:
+   * Test that trackEngagement emits the UserEngaged event.
+   */
+  it("75. Should emit UserEngaged event on engagement tracking", async function () {
+    await expect(researchNFT.trackEngagement(addr1.address, 0, "view"))
+      .to.emit(researchNFT, "UserEngaged")
+      .withArgs(addr1.address, 0, "view");
+  });
 });
