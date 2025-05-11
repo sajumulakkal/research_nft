@@ -18,6 +18,25 @@ describe("ResearchNFT Contract", function () {
 
         // You'll need a function in the contract like setDocumentHash(tokenId, docHash) for this to work:
         await researchNFT.connect(owner).setDocumentHash(1, docHash); // Assumes only owner can set it
+
+ // Deploy Mock ERC20 Token for Staking
+    const ERC20Mock = await ethers.getContractFactory("ERC20Mock");
+    stakingToken = await ERC20Mock.deploy("StakingToken", "STK", 1000000);
+    await stakingToken.waitForDeployment();  // Use the correct method here
+
+    // Set the staking token in the ResearchNFT contract
+    await researchNFT.setStakingToken(stakingToken.target);  // Use target instead of address for v6
+
+// Fetch addresses once for cleaner code
+const addr1Address = await addr1.getAddress();
+const addr2Address = await addr2.getAddress();
+const addr3Address = await addr3.getAddress();
+
+// Set initial balances for staking tests
+await stakingToken.transfer(addr1Address, 5000);
+await stakingToken.transfer(addr2Address, 5000);
+await stakingToken.transfer(addr3Address, 5000);
+
   });
 
 
@@ -1310,9 +1329,13 @@ it("71. Notify user before NFT expires", async function () {
 
     const tokenId = rewardMintedEvent.args.tokenId;
 
-    // Set expiration to 6 days from now (within the 7-day notification threshold)
-    const currentTime = Math.floor(Date.now() / 1000);
-    const nearExpiry = currentTime + 6 * 24 * 60 * 60; // 6 days in seconds
+    // Retrieve the current block timestamp
+    const blockNum = await ethers.provider.getBlockNumber();
+    const block = await ethers.provider.getBlock(blockNum);
+    const currentBlockTime = block.timestamp;
+
+    // Set expiration to 6 days from current block time
+    const nearExpiry = currentBlockTime + 6 * 24 * 60 * 60; // 6 days in seconds
 
     // Set the subscription end time using the correct owner
     await researchNFT.connect(addr1).setSubscriptionEndTime(tokenId, nearExpiry);
@@ -1387,4 +1410,190 @@ it("74. Export metadata and transaction history as JSON/CSV", async function () 
       .to.emit(researchNFT, "UserEngaged")
       .withArgs(addr1.address, 0, "view");
   });
+it("76. Should retrieve the list of NFTs created by an address", async function () {
+    // Create two NFTs
+    await researchNFT.connect(owner).createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
+    await researchNFT.connect(owner).createResearchNFT("ipfs://meta2", "ipfs://doc2", 500, 100000, 1);
+    
+    // Retrieve the list of NFTs created by the owner
+    const createdNFTs = await researchNFT.getNFTsCreatedBy(owner.address);
+    
+    // Check the length of the array
+    expect(createdNFTs.length).to.equal(2);
+
+    // Check the token IDs
+    expect(createdNFTs[0].toString()).to.equal("0");
+    expect(createdNFTs[1].toString()).to.equal("1");
+});
+it("77. Should mint multiple NFTs in a single transaction", async function () {
+    const [owner] = await ethers.getSigners();
+
+    // Metadata URIs and other required parameters
+    const metadataURIs = ["ipfs://meta1", "ipfs://meta2", "ipfs://meta3"];
+    const documentURIs = ["ipfs://doc1", "ipfs://doc2", "ipfs://doc3"];
+    const royalties = [500, 500, 500];
+    const expirations = [200000, 200000, 200000];
+    const accessLevels = [1, 1, 1];
+
+    // Batch mint multiple NFTs
+    const tx = await researchNFT.createMultipleResearchNFTs(metadataURIs, documentURIs, royalties, expirations, accessLevels);
+    await tx.wait();
+
+    // Check total supply to ensure all NFTs were minted
+    const totalSupply = await researchNFT.totalSupply();
+    expect(totalSupply).to.equal(metadataURIs.length);  // Expect 3 NFTs to be minted
+
+    // Check if each token is minted
+    for (let i = 0; i < metadataURIs.length; i++) {
+        const tokenURI = await researchNFT.tokenURI(i);
+        expect(tokenURI).to.equal(metadataURIs[i]);
+    }
+});
+
+it("78. Should check if caller has access to the research document", async function () {
+    // Retrieve the current block timestamp
+    const blockNum = await ethers.provider.getBlockNumber();
+    const block = await ethers.provider.getBlock(blockNum);
+    const currentBlockTime = block.timestamp;
+
+    const expirationTime = currentBlockTime + 3600; // 1 hour from now
+
+    // Mint a new NFT with a future expiration time
+    await researchNFT.connect(owner).createResearchNFT(
+        "ipfs://meta1",
+        "ipfs://doc1",
+        500,
+        expirationTime,
+        1
+    );
+
+    // Check access before expiration
+    const hasAccessBefore = await researchNFT.hasAccess(0);
+    expect(hasAccessBefore).to.equal(true);
+
+    // Fast forward time to after expiration
+    await ethers.provider.send("evm_increaseTime", [3601]);
+    await ethers.provider.send("evm_mine");
+
+    // Check access after expiration
+    const noAccess = await researchNFT.hasAccess(0);
+    expect(noAccess).to.equal(false);
+});
+
+
+
+it("79. Should retrieve the access level of the research document", async function () {
+    await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 2);
+    const accessLevel = await researchNFT.getAccessLevel(0);
+    expect(accessLevel).to.equal(2);
+});
+it("80. Should allow users to stake tokens", async function () {
+    // Approve and stake tokens
+    await stakingToken.connect(addr1).approve(researchNFT.target, 1000);
+    await researchNFT.connect(addr1).stakeTokens(1000);
+
+    // Verify staked amount
+    const stakedAmount = await researchNFT.stakedTokens(await addr1.getAddress());
+    expect(stakedAmount).to.equal(1000);
+});
+
+it("81. Should allow users to unstake tokens", async function () {
+    // Approve and stake tokens
+    await stakingToken.connect(addr1).approve(researchNFT.target, 1000);
+    await researchNFT.connect(addr1).stakeTokens(1000);
+
+    // Now unstake
+    await researchNFT.connect(addr1).unstakeTokens(500);
+
+    // Verify remaining staked amount
+    const remainingStaked = await researchNFT.stakedTokens(await addr1.getAddress());
+    expect(remainingStaked).to.equal(500);
+});
+
+it("82. Should allow users to withdraw staked tokens", async function () {
+    // Approve and stake tokens
+    await stakingToken.connect(addr1).approve(researchNFT.target, 1000);
+    await researchNFT.connect(addr1).stakeTokens(1000);
+
+    // Withdraw tokens
+    await researchNFT.connect(addr1).withdrawStakedTokens(500);
+
+    // Verify remaining staked amount
+    const remainingStaked = await researchNFT.stakedTokens(await addr1.getAddress());
+    expect(remainingStaked).to.equal(500);
+});
+
+it("83. Should allow users to set a referral", async function () {
+    await researchNFT.connect(addr2).setReferral(addr1.address);
+    const referrer = await researchNFT.referrals(addr2.address);
+    expect(referrer).to.equal(addr1.address);
+});
+it("84. Should reward a referral", async function () {
+    await researchNFT.connect(owner).rewardReferral(addr1.address, 100);
+    const reward = await researchNFT.referralRewards(addr1.address);
+    expect(reward).to.equal(100);
+});
+it("85. Should calculate dynamic price based on views", async function () {
+    await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
+
+    // Simulate 3 views
+    await researchNFT.connect(addr1).viewResearch(0);
+    await researchNFT.connect(addr2).viewResearch(0);
+    await researchNFT.connect(addr3).viewResearch(0);
+
+    const dynamicPrice = await researchNFT.getDynamicPrice(0);
+    expect(dynamicPrice).to.equal(300); // 100 per view
+});
+it("86. Should allow users to purchase a license", async function () {
+    // Mint the NFT
+    await researchNFT.connect(owner).createResearchNFT(
+        "ipfs://meta1",
+        "ipfs://doc1",
+        500,
+        100000,
+        1
+    );
+
+    // Set the NFT for sale
+    await researchNFT.connect(owner).setForSale(0, ethers.parseEther("1"));
+
+    // Purchase the NFT
+    await researchNFT.connect(addr1).purchaseLicense(0, {
+        value: ethers.parseEther("1"),
+    });
+
+    // Verify new ownership
+    const newOwner = await researchNFT.ownerOf(0);
+    expect(newOwner).to.equal(addr1.address);
+});
+
+it("87. Should remove address from whitelist", async function () {
+    await researchNFT.connect(owner).addToWhitelist(addr1.address);
+    await researchNFT.connect(owner).removeFromWhitelist(addr1.address);
+
+    const isWhitelisted = await researchNFT.whitelisted(addr1.address);
+    expect(isWhitelisted).to.equal(false);
+});
+it("88. Should allow NFT owner to manage subscription", async function () {
+    await researchNFT.createResearchNFT("ipfs://meta1", "ipfs://doc1", 500, 100000, 1);
+
+    // Upgrade access level
+    await researchNFT.connect(owner).manageSubscription(0, 3, 200000);
+    const accessLevel = await researchNFT.getAccessLevel(0);
+    expect(accessLevel).to.equal(3);
+
+    const expiration = await researchNFT.researchData(0);
+    expect(expiration.expiration).to.equal(200000);
+});
+it("89. Should add address to whitelist", async function () {
+    await researchNFT.connect(owner).addToWhitelist(addr1.address);
+    const isWhitelisted = await researchNFT.whitelisted(addr1.address);
+    expect(isWhitelisted).to.equal(true);
+});
+
+
+
+
+
+
 });

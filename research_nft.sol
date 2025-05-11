@@ -11,6 +11,7 @@ import "@openzeppelin/contracts/token/common/ERC2981.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./lib/NFTLib.sol";
+import "hardhat/console.sol";
 
 // Main contract for Research NFTs
 contract ResearchNFT is ERC721URIStorage, Ownable, ERC721Burnable, Pausable, ERC2981, ReentrancyGuard {
@@ -34,6 +35,7 @@ contract ResearchNFT is ERC721URIStorage, Ownable, ERC721Burnable, Pausable, ERC
         address author; // Author address of the research
         uint256 views; // Number of views for the research
     }
+
 struct Bid {
     address bidder;
     uint256 amount;
@@ -77,7 +79,9 @@ mapping(uint256 => Certificate) public certificates;
     mapping(address => bool) public whitelistedMerchants; // Mapping to store whitelisted merchants
     mapping(uint256 => string) private logs;// Declare a mapping to store logs for each tokenId
     mapping(uint256 => string[]) public updateLogs;
-    
+    mapping(address => uint256[]) private _nftsCreatedByAddress; // Mapping to track NFTs created by each address
+
+
 
 
     // Event declarations for various actions related to NFTs (creation, update, auction, etc.)
@@ -100,31 +104,34 @@ mapping(uint256 => Certificate) public certificates;
     //event SubscriptionExtended(uint256 indexed tokenId, uint256 extraDays);
     // --- Research NFT Creation ---
     // Function to create a Research NFT with associated metadata and document URI
-    function createResearchNFT(
-        string memory metadataURI,
-        string memory documentURI,
-        uint96 royalty,
-        uint256 expiration,
-        uint256 accessLevel
-    ) external whenNotPaused {
-        uint256 tokenId = _tokenIdCounter.current(); // Get the current token ID
-        _mint(msg.sender, tokenId); // Mint the NFT to the sender
-        _setTokenURI(tokenId, metadataURI); // Set the metadata URI for the token
-        _setTokenRoyalty(tokenId, msg.sender, royalty); // Set the royalty for the token
+function createResearchNFT(
+    string memory metadataURI,
+    string memory documentURI,
+    uint96 royalty,
+    uint256 expiration,
+    uint256 accessLevel
+) external whenNotPaused {
+    uint256 tokenId = _tokenIdCounter.current();
+    _mint(msg.sender, tokenId);
+    _setTokenURI(tokenId, metadataURI);
+    _setTokenRoyalty(tokenId, msg.sender, royalty);
 
-        // Store the research data in the mapping
-        researchData[tokenId] = Research({
-            documentURI: documentURI,
-            expiration: expiration,
-            accessLevel: accessLevel,
-            author: msg.sender,
-            views: 0
-        });
+    researchData[tokenId] = Research({
+        documentURI: documentURI,
+        expiration: expiration,
+        accessLevel: accessLevel,
+        author: msg.sender,
+        views: 0
+    });
 
-        nftTypes[tokenId] = NFTType.RESEARCH; // Mark the token as a Research NFT
-        _tokenIdCounter.increment(); // Increment the token ID counter
-        emit NFTCreated(tokenId, metadataURI); // Emit event for NFT creation
-    }
+    // Track the creator of the NFT
+    _nftsCreatedByAddress[msg.sender].push(tokenId);
+
+    nftTypes[tokenId] = NFTType.RESEARCH;
+    _tokenIdCounter.increment();
+    emit NFTCreated(tokenId, metadataURI);
+}
+
 function getRoyaltyReceiver(uint256 tokenId) public view returns (address) {
     return _royaltyReceivers[tokenId];
 }
@@ -452,35 +459,54 @@ function royaltyInfo(uint256 tokenId, uint256 salePrice)
 
 
     //1. Mint Multiple Research NFTs in a Single Transaction
-    // Allows the creation of multiple Research NFTs in one transaction
-    function createMultipleResearchNFTs(
-        string[] memory metadataURIs,
-        string[] memory documentURIs,
-        uint96[] memory royalties,
-        uint256[] memory expirations,
-        uint256[] memory accessLevels
-    ) external whenNotPaused {
-        require(metadataURIs.length == documentURIs.length && documentURIs.length == royalties.length, "Array lengths mismatch");  // Ensure all arrays have the same length
+// Allows the creation of multiple Research NFTs in one transaction
+function createMultipleResearchNFTs(
+    string[] memory metadataURIs,
+    string[] memory documentURIs,
+    uint96[] memory royalties,
+    uint256[] memory expirations,
+    uint256[] memory accessLevels
+) external whenNotPaused {
+    require(metadataURIs.length == documentURIs.length, "Array lengths mismatch");
+    require(documentURIs.length == royalties.length, "Array lengths mismatch");
+    require(royalties.length == expirations.length, "Array lengths mismatch");
+    require(expirations.length == accessLevels.length, "Array lengths mismatch");
 
-        for (uint256 i = 0; i < metadataURIs.length; i++) {
-            uint256 tokenId = _tokenIdCounter.current();  // Get the next available token ID
-            _mint(msg.sender, tokenId);  // Mint the new NFT
-            _setTokenURI(tokenId, metadataURIs[i]);  // Set the metadata URI for the token
-            _setTokenRoyalty(tokenId, msg.sender, royalties[i]);  // Set the royalty information for the token
+    for (uint256 i = 0; i < metadataURIs.length; i++) {
+        uint256 tokenId = _tokenIdCounter.current();
 
-            researchData[tokenId] = Research({
-                documentURI: documentURIs[i],  // Set the document URI
-                expiration: expirations[i],  // Set the expiration time
-                accessLevel: accessLevels[i],  // Set the access level
-                author: msg.sender,  // Set the author to the sender
-                views: 0  // Initialize the view count to 0
-            });
+        // Mint the NFT
+        _mint(msg.sender, tokenId);
+        _setTokenURI(tokenId, metadataURIs[i]);
+        _setTokenRoyalty(tokenId, msg.sender, royalties[i]);
 
-            nftTypes[tokenId] = NFTType.RESEARCH;  // Set the type of the NFT to 'RESEARCH'
-            _tokenIdCounter.increment();  // Increment the token ID counter for the next NFT
-            emit NFTCreated(tokenId, metadataURIs[i]);  // Emit an event for the NFT creation
-        }
+        // Set up research data
+        researchData[tokenId] = Research({
+            documentURI: documentURIs[i],
+            expiration: expirations[i],
+            accessLevel: accessLevels[i],
+            author: msg.sender,
+            views: 0
+        });
+
+        // Track the creator for each NFT
+        _nftsCreatedByAddress[msg.sender].push(tokenId);
+
+        // Set the type as Research
+        nftTypes[tokenId] = NFTType.RESEARCH;
+
+        // Increment counters
+        _tokenIdCounter.increment();
+        _totalSupply += 1; // Increment total supply
+
+        // Emit the event
+        emit NFTCreated(tokenId, metadataURIs[i]);
     }
+}
+
+function getNFTsCreatedBy(address creator) external view returns (uint256[] memory) {
+    return _nftsCreatedByAddress[creator];
+}
 
     //4. Transfer Ownership of an NFT and Pay Royalties to the Original Creator
     // Transfers ownership of an NFT and pays royalties to the original creator
@@ -497,10 +523,19 @@ function royaltyInfo(uint256 tokenId, uint256 salePrice)
         _transfer(msg.sender, to, tokenId);  // Transfer the NFT from the sender to the new owner
     }
 // 5. Check if Caller has Access to the Research Document
+// Add this to your function for debugging
+// 5. Check if Caller has Access to the Research Document
 function hasAccess(uint256 tokenId) public view returns (bool) {
-    // This function checks if the caller has access to the research document based on the expiration time.
+    require(_exists(tokenId), "Token does not exist");
+
+    // Debugging
+    console.log("Current Time:", block.timestamp);
+    console.log("Expiration Time:", researchData[tokenId].expiration);
+    
     return block.timestamp <= researchData[tokenId].expiration;
 }
+
+
 
 // 6. Retrieve Access Level of the Research Document
 function getAccessLevel(uint256 tokenId) external view returns (uint256) {
@@ -528,11 +563,20 @@ mapping(address => uint256) public stakedTokens;  // Mapping to track staked tok
 
 IERC20 public stakingToken;  // ERC20 token to stake
 
-function stakeTokens(uint256 amount) external {
-    // This function allows users to stake tokens into the contract.
-    require(amount > 0, "Amount must be > 0");  // Ensure a positive amount is staked.
-    stakingToken.transferFrom(msg.sender, address(this), amount);  // Transfer the staked tokens from user to contract.
-    stakedTokens[msg.sender] += amount;  // Update the staked amount for the user.
+
+
+event TokensStaked(address indexed user, uint256 amount);
+
+function stakeTokens(uint256 amount) external nonReentrant {
+    require(amount > 0, "Amount must be > 0");
+
+    // Transfer tokens before updating state to prevent reentrancy
+    bool success = stakingToken.transferFrom(msg.sender, address(this), amount);
+    require(success, "Token transfer failed");
+
+    stakedTokens[msg.sender] += amount;
+
+    emit TokensStaked(msg.sender, amount);
 }
 
 function unstakeTokens(uint256 amount) external {
@@ -566,9 +610,8 @@ function rewardReferral(address referrer, uint256 rewardAmount) external {
 
 // 11. Calculate and Return Dynamic Price of an NFT Based on Views
 function getDynamicPrice(uint256 tokenId) public view returns (uint256) {
-    // This function calculates and returns the dynamic price of an NFT based on the number of views.
-    uint256 views = researchData[tokenId].views;  // Retrieve the number of views for the research document.
-    return 100 * views;  // Example: price increases based on views (100 tokens per view).
+    uint256 views = researchData[tokenId].views;
+    return 100 * views;
 }
 
 // 13. Track Readership Count for Research NFTs
@@ -596,12 +639,23 @@ function transferOwnershipOfContract(address newOwner) external onlyOwner {
 
 // 17. Purchase License to Use Research Content
 function purchaseLicense(uint256 tokenId) external payable {
-    // This function allows users to purchase a license to use research content.
-    uint256 price = sales[tokenId];  // Retrieve the sale price of the research document.
-    require(price > 0 && msg.value >= price, "Not enough funds");  // Ensure the user has enough funds to purchase.
-    address owner = ownerOf(tokenId);  // Retrieve the owner of the NFT.
-    payable(owner).transfer(msg.value);  // Transfer the payment to the owner.
+    uint256 price = sales[tokenId];
+    require(price > 0, "Token not for sale");
+    require(msg.value >= price, "Insufficient funds");
+
+    address seller = ownerOf(tokenId);
+    require(seller != address(0), "Invalid seller");
+
+    // Transfer payment to the seller
+    payable(seller).transfer(msg.value);
+
+    // Transfer the NFT to the buyer
+    _transfer(seller, msg.sender, tokenId);
+
+    // Clear the sale listing
+    sales[tokenId] = 0;
 }
+
 
 // 18. Provide Feedback and Rate the Quality of the Research Content
 mapping(uint256 => string) public feedback;  // Mapping to store feedback for each research document.
@@ -878,13 +932,20 @@ function getBundle(uint256 tokenId) public view returns (uint256[] memory) {
 //Track readership count for Research NFTs
     mapping(uint256 => uint256) private _readershipCount;
 
-    event ResearchViewed(uint256 indexed tokenId, address indexed viewer, uint256 newCount);
+    //event ResearchViewed(uint256 indexed tokenId, address indexed viewer, uint256 newCount);
+    event ResearchViewed(uint256 indexed tokenId, address indexed viewer, uint256 views);
 
-    function viewResearch(uint256 tokenId) public {
-        require(_exists(tokenId), "ResearchNFT: View query for nonexistent token");
-        _readershipCount[tokenId] += 1;
-        emit ResearchViewed(tokenId, msg.sender, _readershipCount[tokenId]);
-    }
+function viewResearch(uint256 tokenId) public {
+    require(_exists(tokenId), "ResearchNFT: View query for nonexistent token");
+
+    // Increment both the general view count and the per-token view count
+    _readershipCount[tokenId] += 1;
+    researchData[tokenId].views += 1;
+
+    emit ResearchViewed(tokenId, msg.sender, researchData[tokenId].views);
+}
+
+
 
     function getReadershipCount(uint256 tokenId) public view returns (uint256) {
         require(_exists(tokenId), "ResearchNFT: Count query for nonexistent token");
@@ -1423,5 +1484,22 @@ function getTags(uint256 tokenId) public view returns (string[] memory) {
     require(_exists(tokenId), "Token does not exist");  // Ensure the token exists
     return nftData.tags[tokenId];
 }
+
+
+    // Function to set the staking token
+    function setStakingToken(address _stakingToken) external onlyOwner {
+        require(_stakingToken != address(0), "Invalid token address");
+        stakingToken = IERC20(_stakingToken);
+    }
+
+    // Example function to check staked balance (for testing)
+    function stakedBalance(address user) external view returns (uint256) {
+        return stakingToken.balanceOf(user);
+    }
+function exists(uint256 tokenId) public view returns (bool) {
+    return _exists(tokenId);
+}
+
+
 }
 
